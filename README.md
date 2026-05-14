@@ -101,5 +101,5 @@ We use a curated monochrome slate palette with vibrant accent highlights:
 ---
 
 <p align="center">
-  Made with ❤️ by Antigravity
+  Made with ❤️ by Nivas
 </p>
