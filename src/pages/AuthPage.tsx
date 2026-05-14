@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, Phone, LogIn, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_URL } from '../context/AuthContext';
 
 const AuthPage = () => {
   const { login: onLogin } = useAuth();
@@ -26,12 +26,24 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: loginEmail, password: loginPassword })
       });
-      const data = await response.json();
+      
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON response:', text);
+        setError(`Server error: ${response.status}`);
+        setLoading(false);
+        return;
+      }
+
       if (response.ok) {
         onLogin(data.user, data.token);
         navigate('/');
@@ -39,7 +51,8 @@ const AuthPage = () => {
         setError(data.error || 'Login failed');
       }
     } catch (err) {
-      setError('Connection error');
+      console.error('Fetch error:', err);
+      setError('Connection error: Could not reach server');
     } finally {
       setLoading(false);
     }
@@ -49,12 +62,22 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:5000/api/auth/google', {
+      const response = await fetch(`${API_URL}/api/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential: credentialResponse.credential })
       });
-      const data = await response.json();
+      
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        setError(`Server error: ${response.status}`);
+        setLoading(false);
+        return;
+      }
+
       if (response.ok) {
         onLogin(data.user, data.token);
         navigate('/');
@@ -62,7 +85,8 @@ const AuthPage = () => {
         setError(data.error || 'Google login failed');
       }
     } catch (err) {
-      setError('Connection error');
+      console.error('Google Auth Fetch error:', err);
+      setError('Connection error: Could not reach server');
     } finally {
       setLoading(false);
     }
@@ -73,12 +97,22 @@ const AuthPage = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(signupData)
       });
-      const data = await response.json();
+      
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        setError(`Server error: ${response.status}`);
+        setLoading(false);
+        return;
+      }
+
       if (response.ok) {
         onLogin(data.user, data.token);
         navigate('/');
@@ -86,7 +120,8 @@ const AuthPage = () => {
         setError(data.error || 'Signup failed');
       }
     } catch (err) {
-      setError('Connection error');
+      console.error('Signup Fetch error:', err);
+      setError('Connection error: Could not reach server');
     } finally {
       setLoading(false);
     }

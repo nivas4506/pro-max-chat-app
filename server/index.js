@@ -29,7 +29,15 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'your_super_secret_key';
 
 app.use(cors());
-app.use(express.json());
+app.use((req, res, next) => {
+  express.json()(req, res, (err) => {
+    if (err) {
+      console.error('JSON Parse Error:', err.message);
+      return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+    next();
+  });
+});
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -78,10 +86,14 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 app.post('/api/auth/register', async (req, res) => {
+  console.log('Register request received:', req.body.email);
   try {
     const { name, email, password, phone } = req.body;
     const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (existing.length > 0) return res.status(400).json({ error: 'User already exists' });
+    if (existing.length > 0) {
+      console.log('User already exists:', email);
+      return res.status(400).json({ error: 'User already exists' });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`;
@@ -101,14 +113,21 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 app.post('/api/auth/login', async (req, res) => {
+  console.log('Login request received:', req.body.email);
   try {
     const { email, password } = req.body;
     const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (users.length === 0) return res.status(400).json({ error: 'User not found' });
+    if (users.length === 0) {
+      console.log('User not found:', email);
+      return res.status(400).json({ error: 'User not found' });
+    }
 
     const user = users[0];
     const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(400).json({ error: 'Invalid password' });
+    if (!validPassword) {
+      console.log('Invalid password for user:', email);
+      return res.status(400).json({ error: 'Invalid password' });
+    }
 
     await db.query('UPDATE users SET last_login = NOW(), status = "online" WHERE id = ?', [user.id]);
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET);
@@ -173,6 +192,12 @@ io.on('connection', (socket) => {
       }
     }
   });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled Server Error:', err);
+  res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
 server.listen(PORT, () => {

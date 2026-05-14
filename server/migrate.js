@@ -16,7 +16,7 @@ async function migrate() {
 
   // 1. Alter users table — MySQL doesn't support IF NOT EXISTS for columns
   const alterUsers = [
-    "ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''",
+    "ALTER TABLE users ADD COLUMN bio TEXT",
     "ALTER TABLE users ADD COLUMN website VARCHAR(255) DEFAULT ''",
     "ALTER TABLE users ADD COLUMN is_private BOOLEAN DEFAULT FALSE",
     "ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE",
